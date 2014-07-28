@@ -19,8 +19,8 @@ when "analytics"
   analytics.write_site_data
 when "report"
   STDOUT.puts "writing html report"
-  inventory.merge_analytics
   analytics.sort_by_visits
+  inventory.merge_analytics
   inventory.write_report 
 when "grab"
   STDOUT.puts "fetching screenshots"
