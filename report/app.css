@@ -1,0 +1,18 @@
+* { box-sizing:border-box; }
+body { margin:0; padding:0; background: #1A1A1A; font-family:Arial;}
+.container {  }
+
+.thumb { float:left; margin:10px; font-size:11px; min-height:164px;}
+	.thumb a { color:#fff; text-decoration:none; }
+	.thumb img { width:150px; height:100px; }
+	.site-title { display:block; width:150px; overflow:hidden; padding:3px; font-size:8px; background:rgba(0,0,0,0.7); }
+	.unit-type, .analytics { display:block; width:150px; overflow:hidden;  }
+
+.section { float:left; width:100%; text-align:center; color:#fff; background: #000; padding:1em; } 
+h2 { margin:1em 0 0 0; padding:0; }
+h3 { margin:0 0 0 1em; padding:0; }
+
+
+.form { float:left; padding: 20px; width:100%; background: #000;}
+.form label { color: #fff; font-weight:bold; }
+.form input { padding:5px; width:300px; }
