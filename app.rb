@@ -12,16 +12,15 @@ case ARGV[0]
 when "update"
   STDOUT.puts "updating inventory csv"
   inventory.update_csv
-  inventory.merge_analytics
   STDOUT.puts "updating screenshots"
   inventory.get_screengrabs
 when "analytics"
   STDOUT.puts "updating analytics"
-  analytics.sort_by_visits
   analytics.write_site_data
 when "report"
   STDOUT.puts "writing html report"
   inventory.merge_analytics
+  analytics.sort_by_visits
   inventory.write_report 
 when "grab"
   STDOUT.puts "fetching screenshots"

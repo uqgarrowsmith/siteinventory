@@ -98,6 +98,7 @@ class SiteInventory
 
   def initialize
     @app_path = File.expand_path('.')
+    @auth = JSON.parse(File.read("#{@app_path}/config/settings.json"))
     grabzit = @auth['grabzit']
     @@grabber = GrabzIt::Client.new(grabzit['username'], grabzit['password'])
     @spreadsheet = '********************' 
@@ -109,7 +110,6 @@ class SiteInventory
     @ga_raw_json = "#{data_path}/UQ.json"
     @ga_json = "#{data_path}/UQ.ordered.json"
 
-    @auth = JSON.parse(File.read('conf/settings.json'))
     @sites = []
     self.import_sites if File.file?(@csv)
 

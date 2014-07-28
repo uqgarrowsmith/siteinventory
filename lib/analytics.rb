@@ -16,7 +16,7 @@ class UQAnalytics
 
     @API_VERSION = 'v3'
     @CACHED_API_FILE = "cache/analytics-#{@API_VERSION}.json"
-    @auth = JSON.parse(File.read('conf/settings.json'))
+    @auth = JSON.parse(File.read('config/settings.json'))
 
     self.setClient
     @analytics = nil
@@ -39,7 +39,6 @@ class UQAnalytics
 
   def setClient
     analytics = @auth['analytics']
-    service_account_email = analytics['service_account_email'] # Email of service account
     key_file = "privatekey.p12" # File containing your private key
     key_secret = 'notasecret' # Password to unlock private key
 
@@ -53,7 +52,7 @@ class UQAnalytics
       :token_credential_uri => 'https://accounts.google.com/o/oauth2/token',
       :audience => 'https://accounts.google.com/o/oauth2/token',
       :scope => 'https://www.googleapis.com/auth/analytics.readonly',
-      :issuer => service_account_email,
+      :issuer => analytics['service_account_email'],
       :signing_key => key)
 
     # Request a token for our service account
