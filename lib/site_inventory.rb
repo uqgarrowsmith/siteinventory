@@ -94,11 +94,12 @@ end
 
 class SiteInventory
   include Utilities
-  attr_accessor :csv, :sites, :urls, :grab_exension, :report, :csv, :spreadsheet, :ga_json, :app_path, :ga_raw_json
+  attr_accessor :csv, :sites, :urls, :grab_exension, :report, :csv, :spreadsheet, :ga_json, :app_path, :ga_raw_json, :auth
 
   def initialize
     @app_path = File.expand_path('.')
-    @@grabber = GrabzIt::Client.new("****", "****")
+    grabzit = @auth['grabzit']
+    @@grabber = GrabzIt::Client.new(grabzit['username'], grabzit['password'])
     @spreadsheet = '********************' 
     @grab_exension = 'jpg'
     @report = "#{@app_path}/report/screenshots.html"
@@ -108,6 +109,7 @@ class SiteInventory
     @ga_raw_json = "#{data_path}/UQ.json"
     @ga_json = "#{data_path}/UQ.ordered.json"
 
+    @auth = JSON.parse(File.read('conf/settings.json'))
     @sites = []
     self.import_sites if File.file?(@csv)
 
@@ -121,8 +123,9 @@ class SiteInventory
       puts "missing #{@csv}"
     end
     if not File.file?(@csv)
-      session = GoogleDrive.login("your@email.edu.au", "password")
-      ss = session.spreadsheet_by_key(@spreadsheet)
+      google_drive = @auth['google_drive']
+      session = GoogleDrive.login(google_drive['username'], google_drive['password'])
+      ss = session.spreadsheet_by_key(google_drive['spreadsheet'])
       ss.export_as_file(@csv, 'csv', 0)
       puts "downloaded #{@csv}"
     else

@@ -6,7 +6,7 @@ require 'json'
 
 class UQAnalytics
   include Utilities
-  attr_accessor :data, :profileID, :profiles, :analytics, :client, :properties, :app_path, :ga_raw_json, :ga_json
+  attr_accessor :data, :profileID, :profiles, :analytics, :client, :properties, :app_path, :ga_raw_json, :ga_json, :auth
 
   def initialize()
     @app_path = File.expand_path('.')
@@ -16,6 +16,7 @@ class UQAnalytics
 
     @API_VERSION = 'v3'
     @CACHED_API_FILE = "cache/analytics-#{@API_VERSION}.json"
+    @auth = JSON.parse(File.read('conf/settings.json'))
 
     self.setClient
     @analytics = nil
@@ -37,7 +38,8 @@ class UQAnalytics
   end
 
   def setClient
-    service_account_email = '****somelongstring****@developer.gserviceaccount.com' # Email of service account
+    analytics = @auth['analytics']
+    service_account_email = analytics['service_account_email'] # Email of service account
     key_file = "privatekey.p12" # File containing your private key
     key_secret = 'notasecret' # Password to unlock private key
 
