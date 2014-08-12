@@ -14,14 +14,17 @@ when "update"
   inventory.update_csv
   STDOUT.puts "updating screenshots"
   inventory.get_screengrabs
+when "test"
+  STDOUT.puts "write sites to json"
+  inventory.export_to_json
 when "analytics"
   STDOUT.puts "updating analytics"
   analytics.write_site_data
+  analytics.sort_by_visits
 when "report"
   STDOUT.puts "writing html report"
-  analytics.sort_by_visits
   inventory.merge_analytics
-  inventory.write_report 
+  inventory.export_to_json
 when "grab"
   STDOUT.puts "fetching screenshots"
   inventory.get_screengrabs  

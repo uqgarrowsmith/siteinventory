@@ -1,0 +1,91 @@
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="app.css">
+</head>
+<body>
+
+<div class="filter">
+	<ul id="tier"></ul>
+	<ul id="unit_type"></ul>
+	<ul id="portfolio"></ul>
+</div>
+
+<ul id="sites"></ul>
+
+<script src="http://code.jquery.com/jquery-1.9.1.min.js" type="text/javascript"></script>
+<script src="js/handlebars-v1.3.0.js"></script>
+<script src="js/jquery.tinysort.min.js"></script>
+
+<script id="sites-template" type="text/x-handlebars-template">
+	{{#sites}}
+		<li class='site' data-brand='{{branding}}' data-type='{{unit_type}}' data-tag='{{tag}}' data-tier='{{tier}}' data-cms='{{cms}}' data-portfolio='{{portfolio}}'>
+			<a href='{{url}}' title='{{title}}' target='_blank'>
+			<img src='../{{img}}' width='200' height='150' alt='{{title}}'>
+			<div class='meta'>
+				<div class='cms'>{{cms}}</div>
+				<div class='tier'>{{tier}}</div>
+				<div class='tag'>{{tag}}</div>
+				<div class='type'>{{unit_type}}</div>
+			</div>
+			<span class='title'>{{title}}</span>
+		</a></li>
+	{{/sites}}
+</script>
+
+<script>
+var sites, taxonomy;
+$.when(
+    $.getJSON('data/sites.json', function(data) {
+        sites = data;
+    }),
+    $.getJSON('data/taxonomy.json', function(data) {
+        taxonomy = data;
+    })
+).then(function() {
+    if (sites && taxonomy) {
+		console.log(taxonomy);
+		var source = $("#sites-template").html();
+		var template = Handlebars.compile(source);
+		var html = template(sites);
+		$('#sites').html(html);
+		$("ul#sites>li").tsort({data:'brand',order:'desc'});
+		
+		var source = "{{#each unit_type}}<li><a href='#{{@key}}' class='filter-{{@key}}'>{{this}} <span class='count'>0</span></a></li>{{/each}}";
+		var template = Handlebars.compile(source);
+		var html = template(taxonomy);
+		$('#unit_type').html(html);
+	
+		var source = "{{#each tier}}<li><a href='#{{@key}}' class='filter-{{@key}}'>{{this}} <span class='count'>0</span></a></li>{{/each}}";
+		var template = Handlebars.compile(source);
+		var html = template(taxonomy);
+		$('#tier').html(html);
+	
+		$('#unit_type>li a').each(function() {
+		    k = $(this).attr("href").substring(1);
+			l = $('#sites [data-type="'+k+'"]').length;
+			$(this).children('.count').html(l);
+		});
+		$('#unit_type>li').tsort('.count', {order:'desc'});
+    } else {
+        console.log('Borked');
+    }
+});
+
+$(window).on('hashchange', function() {
+	showSection(location.hash);
+});
+
+function showSection(location_hash){
+	hash = location_hash.substring(1);
+	if (hash && hash !== '') {
+		$('#sites>li').hide();
+		$('#sites [data-type="'+hash+'"]').show();
+		$("#sites>li").tsort('a', {attr:'title', order:'asc'});
+	} else {
+		$('#sites>li').show();
+	}
+}
+</script>
+
+</body>	
+</html>

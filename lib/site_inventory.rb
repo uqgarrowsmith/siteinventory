@@ -6,11 +6,11 @@ require "json"
 
 class Site
   include Utilities
-  attr_accessor :url, :name, :tier, :cms, :unit_type, :type, :tag, :branding, :portfolio, :owner, :analytics, :img
+  attr_accessor :url, :name, :tier, :cms, :unit_type, :type, :tag, :brand, :portfolio, :owner, :analytics, :img
 
   @@img_ext = 'jpg'
 
-  def initialize(url = '', name = '', tier = '5:Not applicable', cms = '', unit_type = '', type = '', tag = [], branding = 'untagged', portfolio = '', owner = '')
+  def initialize(url = '', name = '', tier = '5:Not applicable', cms = '', unit_type = '', type = '', tag = [], brand = 'untagged', portfolio = '', owner = '')
     url = nil if url == 'Website not listed in UQ ORG'
     name = url if name.to_s.empty? == true
     @url, @name, @tier, @cms, @unit_type, @type, @tag, @branding, @portfolio, @owner = url, name, tier, cms, unit_type, type, tag, branding, portfolio, owner
@@ -22,8 +22,16 @@ class Site
   end
 
   def slug(thing)
-    thing.to_s.downcase.strip.gsub(' ', '-').gsub(/[^\w-]/, '')
+    thing.to_s.downcase.strip.gsub(' ', '-').gsub(/[^a-z]/i, '')
   end
+
+  def unit_type
+    if @unit_type.to_s.empty?
+      return 'untagged'
+    else
+      return @unit_type
+    end
+  end 
 
   def branding
     if @branding.to_s.empty?
@@ -39,24 +47,27 @@ class Site
 
   def img_filepath
     "report/images/#{self.filename}.#{@@img_ext}"
-  end 
+  end
 
-  def to_html
-    if self.analytics['ga:total'].to_i > 0
-      analytics = "<span class='analytics'>#{self.analytics['ga:total']}</span>"
-    else 
-      analytics = "<span class='analytics'>! No Analytics </span>"
-    end
-    return %Q{
-        <div class='thumb #{self.slug(self.tag)} #{self.slug(self.branding)} #{self.slug(self.unit_type)}'>
-          <a href='#{self.http_url}' title='#{self.name}' target='_blank'>
-            <img src='../#{self.img_filepath}' width='200' height='150' alt='#{self.name}'>
-            <span class='site-title'>#{self.name}</span>
-            #{analytics}
-            <span class='unit-type'>#{self.unit_type}</span>
-          </a>
-        </div>
+  def to_h
+    site = {
+      :url => self.http_url,
+      :title => self.name,
+      :img => self.img_filepath,
+      :portfolio => self.slug(self.portfolio),
+      :owner => self.slug(self.owner),
+      :tier => self.slug(self.tier),
+      :cms => self.slug(self.cms),            
+      :tag => self.slug(self.tag),
+      :brand => self.slug(self.brand),
+      :type => self.slug(self.type),
+      :unit_type => self.slug(self.unit_type),
+      :is_website => self.is_a_website,
+      :ga => { 
+          :total => self.analytics['ga:total'],
+          :visits => self.analytics['ga:visits']
       }
+    }
   end
 
   def filename
@@ -94,7 +105,7 @@ end
 
 class SiteInventory
   include Utilities
-  attr_accessor :csv, :sites, :urls, :grab_exension, :report, :csv, :spreadsheet, :ga_json, :app_path, :ga_raw_json, :auth
+  attr_accessor :csv, :sites, :urls, :grab_exension, :report, :csv, :spreadsheet, :ga_json, :app_path, :ga_raw_json, :auth, :tags
 
   def initialize
     @app_path = File.expand_path('.')
@@ -109,10 +120,8 @@ class SiteInventory
     @csv = "#{data_path}/Site Inventory Master - Master domains.csv"
     @ga_raw_json = "#{data_path}/UQ.json"
     @ga_json = "#{data_path}/UQ.ordered.json"
-
     @sites = []
     self.import_sites if File.file?(@csv)
-
   end
 
   def update_csv
@@ -145,64 +154,45 @@ class SiteInventory
   		site if site.is_a_website == true
   	}
   end
-
-  def write_report
-
-    groups = {
-      "uq" => {
-        "purple" => [], 
-        "custom" => [],
-        "blue" => [],
-      },
-      "other" => {
-        "custom" => [], 
-        "untagged" => [],   
-      },
+  
+  def export_to_json
+    data = []
+    
+    @taxonomy = { 
+      'brand' => {},
+      'cms' => {},
+      'type' => {},
+      'tier' => {},
+      'unit_type' => {},
+      'portfolio' => {}
     }
-    # sort by visits
-    @sites.sort!.reverse!
-
-  	@sites.each do |site|
+    
+    @sites.each do |site|
       if site.is_a_website
         if File.file?(site.img_filepath)
-          case site.branding
-            when 'UQ'
-              groups["uq"]["purple"] << site.to_html         
-            when 'Custom UQ'
-              groups["uq"]["custom"] << site.to_html         
-            when 'UQ blue'
-              groups["uq"]["blue"] << site.to_html
-            when 'Custom'
-              groups["other"]["custom"] << site.to_html
-            else 
-              groups["other"]["untagged"] << site.to_html
-          end
+          @taxonomy['brand'].merge!(site.slug(site.brand) => site.brand ) unless @taxonomy['brand'].value?(site.brand)
+          @taxonomy['cms'].merge!(site.slug(site.cms) => site.cms ) unless @taxonomy['cms'].value?(site.cms)
+          @taxonomy['type'].merge!(site.slug(site.type) => site.type ) unless @taxonomy['type'].value?(site.type)
+          @taxonomy['tier'].merge!(site.slug(site.tier) => site.tier ) unless @taxonomy['tier'].value?(site.tier)
+          @taxonomy['unit_type'].merge!(site.slug(site.unit_type) => site.unit_type ) unless @taxonomy['unit_type'].value?(site.unit_type)
+          @taxonomy['portfolio'].merge!(site.slug(site.portfolio) => site.portfolio ) unless @taxonomy['portfolio'].value?(site.portfolio)
+          data << site.to_h
         end
       end
-    end  
-
-    output = '<html><head><link rel="stylesheet" type="text/css" href="app.css"></head><body><div class="container">'
-    groups.each { |group_tag, segment| 
-      output += "<div class='section'><h2>#{group_tag}</h2></div>\n"
-      segment.each {|k,v|
-        output += "<div class='section'><h3>#{k}</h3></div>\n"
-        output += v.join("\n")
+    end
+    
+    site_output = {
+      :sites => data,
+      :total => { 
+        :sites => data.length,
+        :urls => @sites.length
       }
     }
-    output += '</div>'
-    output += %Q{
-      <script src="http://code.jquery.com/jquery-1.9.1.min.js" type="text/javascript"></script>
-      <script src="http://rmm5t.github.io/jquery-sieve/dist/jquery.sieve.min.js" type="text/javascript"></script>
-      <script>
-        searchTemplate = "<div class='form'><label>Find site: <input type='text' class='form-control' placeholder=''></label></div>"
-        $(".container").sieve({ searchTemplate: searchTemplate, itemSelector: ".thumb" });
-      </script>
-    }
-    output += '</body></html>'
-
-    File.open(@report, 'w') {|f| f.write(output)}
-    puts "Saved #{@report}"
-
+    
+    File.open('report/data/sites.json', 'w') {|f| f.write(site_output.to_json)}
+    puts "Saved report/data/sites.json"
+    File.open('report/data/taxonomy.json', 'w') {|f| f.write(@taxonomy.to_json)}
+    puts "Saved report/data/taxonomy.json"
   end
 
   def import_sites
