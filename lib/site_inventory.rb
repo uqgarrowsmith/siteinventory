@@ -6,14 +6,14 @@ require "json"
 
 class Site
   include Utilities
-  attr_accessor :url, :name, :tier, :cms, :unit_type, :type, :tag, :brand, :portfolio, :owner, :analytics, :img
+  attr_accessor :id, :url, :name, :tier, :cms, :unit_type, :tag, :branding, :portfolio, :owner, :analytics, :img
 
   @@img_ext = 'jpg'
 
-  def initialize(url = '', name = '', tier = '5:Not applicable', cms = '', unit_type = '', type = '', tag = [], brand = 'untagged', portfolio = '', owner = '')
+  def initialize(id = nil, url = '', name = '', tier = '5:Not applicable', cms = '', unit_type = '', tag = [], branding = 'untagged', portfolio = '', owner = '')
     url = nil if url == 'Website not listed in UQ ORG'
     name = url if name.to_s.empty? == true
-    @url, @name, @tier, @cms, @unit_type, @type, @tag, @branding, @portfolio, @owner = url, name, tier, cms, unit_type, type, tag, branding, portfolio, owner
+    @id, @url, @name, @tier, @cms, @unit_type, @tag, @branding, @portfolio, @owner = id, url, name, tier, cms, unit_type, tag, branding, portfolio, owner
     @analytics = { 
       'ga:total' => 0, 
       'ga:visits' => [], 
@@ -51,6 +51,7 @@ class Site
 
   def to_h
     site = {
+      :id => self.id,
       :url => self.http_url,
       :title => self.name,
       :img => self.img_filepath,
@@ -59,8 +60,7 @@ class Site
       :tier => self.slug(self.tier),
       :cms => self.slug(self.cms),            
       :tag => self.slug(self.tag),
-      :brand => self.slug(self.brand),
-      :type => self.slug(self.type),
+      :branding => self.slug(self.branding),
       :unit_type => self.slug(self.unit_type),
       :is_website => self.is_a_website,
       :ga => { 
@@ -94,7 +94,7 @@ class Site
     bad_tiers = ['5:not applicable','0:unclassified']
     bad_tags = ['alias','404','development','archive', 'intranet']
     bad_cms = [] #['static pages','other']
-    if  bad_tiers.include?(@tier.downcase) || bad_tags.include?(@tag.downcase) || bad_cms.include?(@cms.downcase)
+    if bad_tiers.include?(@tier.downcase) || bad_tags.include?(@tag.downcase) || bad_cms.include?(@cms.downcase)
       return false
     else
       return true
@@ -159,20 +159,18 @@ class SiteInventory
     data = []
     
     @taxonomy = { 
-      'brand' => {},
+      'branding' => {},
       'cms' => {},
-      'type' => {},
       'tier' => {},
       'unit_type' => {},
       'portfolio' => {}
     }
     
-    @sites.each do |site|
+    @sites.each do |site, index|
       if site.is_a_website
         if File.file?(site.img_filepath)
-          @taxonomy['brand'].merge!(site.slug(site.brand) => site.brand ) unless @taxonomy['brand'].value?(site.brand)
+          @taxonomy['branding'].merge!(site.slug(site.branding) => site.branding ) unless @taxonomy['branding'].value?(site.branding)
           @taxonomy['cms'].merge!(site.slug(site.cms) => site.cms ) unless @taxonomy['cms'].value?(site.cms)
-          @taxonomy['type'].merge!(site.slug(site.type) => site.type ) unless @taxonomy['type'].value?(site.type)
           @taxonomy['tier'].merge!(site.slug(site.tier) => site.tier ) unless @taxonomy['tier'].value?(site.tier)
           @taxonomy['unit_type'].merge!(site.slug(site.unit_type) => site.unit_type ) unless @taxonomy['unit_type'].value?(site.unit_type)
           @taxonomy['portfolio'].merge!(site.slug(site.portfolio) => site.portfolio ) unless @taxonomy['portfolio'].value?(site.portfolio)
@@ -198,7 +196,7 @@ class SiteInventory
   def import_sites
     skipped = 0
     CSV.foreach(@csv, :headers => true) do |r|
-      site = Site.new(r['RAW URL'], r['Site name'], r['Tier'], r['CMS'], r['Unit Type'], r['Type'], r['Tags'], r['Branding'], r['Portfolio'], r['Owner'])
+      site = Site.new($., r['RAW URL'], r['Site name'], r['Tier'], r['CMS'], r['Unit Type'], r['Tags'], r['Branding'], r['Portfolio'], r['Owner'])
       if site.is_valid == true
         @sites << site 
       else 
